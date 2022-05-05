@@ -9,6 +9,7 @@ namespace Multithread_flaskeautomat
 {
     public class Program
     {
+        // Creation for the 3 queue.
         static Queue<Bottle> producedBottles  = new Queue<Bottle>();
         static Queue<Bottle> sodaBottles = new Queue<Bottle>();
         static Queue<Bottle> beerBottles = new Queue<Bottle>();
