@@ -7,142 +7,34 @@ using System.Threading;
 
 namespace Multithread_flaskeautomat
 {
-    internal class Program
+    public class Program
     {
-        static int bottleNumber { get; set; }
-        static Queue<string> bottles = new Queue<string>();
-
-        static Random random = new Random();
-
-        static Queue<string> soda = new Queue<string>();
-        static Queue<string> beer = new Queue<string>();
+        static Queue<Bottle> producedBottles  = new Queue<Bottle>();
+        static Queue<Bottle> sodaBottles = new Queue<Bottle>();
+        static Queue<Bottle> beerBottles = new Queue<Bottle>();
 
         static void Main(string[] args)
         {
-            Thread producer = new Thread(Producer);
+            Producer produced = new Producer(producedBottles);
+            Splitter splitter = new Splitter(producedBottles, sodaBottles, beerBottles);
+            Consumer consumer = new Consumer(sodaBottles, beerBottles);
 
-            Thread splitter = new Thread(SplitterCon);
+            Thread threadProducer = new Thread(produced.ProducerThread);
+            Thread threadSplitter = new Thread(splitter.SplitterCon);
+            Thread threadSodaConsumer = new Thread(consumer.SodaConsumer);
+            Thread threadBeerConsumer = new Thread(consumer.BeerConsumer);
 
-            Thread sodaConsumer = new Thread(SodaConsumer);
-            Thread beerConsumer = new Thread(BeerConsumer);
+            threadProducer.Start();
+            threadSplitter.Start();
+            threadBeerConsumer.Start();
+            threadSodaConsumer.Start();
 
-            producer.Start();
-            splitter.Start();
+            threadProducer.Join();
+            threadSplitter.Join();
+            threadSodaConsumer.Join();
+            threadBeerConsumer.Join();
 
-            beerConsumer.Start();
-            sodaConsumer.Start();
-
-            producer.Join();
-            splitter.Join();
-
-            sodaConsumer.Join();
-            beerConsumer.Join();
-
+            Console.ReadKey();
         }
-
-        static void Producer()
-        {
-            while (true)
-            {
-                Monitor.Enter(bottles);
-
-                if (bottles.Count < 6)
-                {
-                    for (int i = 0; i < 6; i++)
-                    {
-                        int whichBottle = random.Next(0, 7);
-
-                        if (whichBottle < 3)
-                        {
-                            bottles.Enqueue("Soda");
-                            Console.WriteLine("produceret en soda " + bottles.Count);
-
-                        }
-                        else
-                        {
-                            bottles.Enqueue("Beer");
-                            Console.WriteLine("produceret en beer " + bottles.Count);
-
-                        }
-                    }
-                }
-                else if (bottles.Count == 6)
-                    Console.WriteLine("Producer venter..");
-                Thread.Sleep(5000);
-                Monitor.PulseAll(bottles);
-                Monitor.Exit(bottles);
-            }
-        }
-
-        static void SplitterCon()
-        {
-            while (true)
-            {
-                Monitor.Enter(bottles);
-                while (bottles.Count == 0)
-                {
-                    Monitor.Wait(bottles);
-                }
-                Monitor.Exit(bottles);
-
-
-                if (bottles.Contains("Soda"))
-                {
-                    Monitor.Enter(soda);
-
-                    bottles.Dequeue();
-
-                    soda.Enqueue("Soda");
-                    Console.WriteLine("Fordelt en soda");
-                    Monitor.PulseAll(soda);
-                    Monitor.Exit(soda);
-                }
-                else if (bottles.Contains("Beer"))
-                {
-                    Monitor.Enter(soda);
-
-                    bottles.Dequeue();
-                    
-                    beer.Enqueue("Beer");
-                    Console.WriteLine("Fordelt en beer");
-                    Monitor.PulseAll(beer);
-                    Monitor.Exit(beer);
-                }
-            }
-        }
-
-
-        static void SodaConsumer()
-        {
-            while (true)
-            {
-                Monitor.Enter(soda);
-                while (soda.Count == 0)
-                {
-                    Monitor.Wait(soda);
-                }
-                soda.Dequeue();
-                Console.WriteLine("Consumer har consumeret en soda " + " - Queue count is " + soda.Count);
-
-                Monitor.Exit(soda);
-            }
-        }
-
-        static void BeerConsumer()
-        {
-            while (true)
-            {
-                Monitor.Enter(beer);
-                while (beer.Count == 0)
-                {
-                    Monitor.Wait(beer);
-                }
-                beer.Dequeue();
-                Console.WriteLine("Consumer har consumeret en beer " + " - Queue count is " + beer.Count);
-
-                Monitor.Exit(beer);
-            }
-        }
-
     }
 }
